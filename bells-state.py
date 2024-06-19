@@ -1,26 +1,31 @@
-from qiskit import QuantumCircuit, transpile
-from qiskit.providers.aer import AerSimulator
+from qiskit import QuantumCircuit, transpile, assemble, AerSimulator
 
 def quantum_compression(data):
-    # Create a Bell state as an example (a more realistic example would use data)
+    # Create an instance of the simulator for 2-qubit state
+    simulator = AerSimulator()
+
     qc = QuantumCircuit(2)
-    qc.h(0)
-    qc.cx(0, 1)
     
-    # Add Quantum compression logic here later.
-    # For now, let's just return the circuit.
-    return qc
+    # Add quantum operations here based on your data and compression algorithm. 
+    # For simplicity, this example assumes a Bell state between qubits.
+    if data is not None:
+        # You might want to conditionally add operations based on 'data'.
+        qc.x(data[0])  # Example: Apply X-gate only for the first qubit if data[0] == 1
+        qc.cx(0, 1)
+        
+    return transpile(qc, simulator)
 
 def main():
-    # Quantum Compression
-    data = None  # In a real example, place data here. 
-    qc = quantum_compression(data)
+    # Quantum Compression with Data
+    data = [0, 1]  # Placeholder data. Replace this with actual data.
 
-    # Simulate the circuit
-    simulator = AerSimulator()
-    circ = transpile(qc, simulator)
-    result = simulator.run(circ).result()
-    counts = result.get_counts(circ)
+    compressed_circuit = quantum_compression(data)
+    
+    # Assemble the circuit and simulate it using QasmSimulator.
+    qobj = assemble(compressed_circuit)
+    result = simulator.run(qobj).result()
+    counts = result.get_counts()
+    
     print("Quantum Circuit Results:", counts)
 
 if __name__ == "__main__":

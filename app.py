@@ -1,4 +1,10 @@
 from qiskit import QuantumCircuit, Aer, transpile, assemble, execute
+from qiskit.circuit.library import EfficientSU2
+from qiskit_machine_learning.circuit.library import RawFeatureVector
+from qiskit.algorithms.optimizers import COBYLA
+from qiskit.algorithms import VQE
+from qiskit.utils import QuantumInstance
+from qiskit.providers.aer import AerSimulator
 from qiskit.visualization import plot_histogram
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -9,27 +15,28 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
-# Function to initialize quantum data
-def initialize_data(qc, data):
+# Function to create a variational quantum circuit
+def create_variational_circuit(data):
     num_qubits = len(data)
-    qc.h(range(num_qubits))
-
-# Function to apply quantum transformations
-def apply_quantum_transform(qc, depth):
-    for i in range(depth - 1):
-        qc.cx(i, i+1)
-
-# Function to perform quantum compression
-def quantum_compression(data, depth=3):
-    num_qubits = len(data)
-    qc = QuantumCircuit(num_qubits, num_qubits)
-    initialize_data(qc, data)
-    apply_quantum_transform(qc, depth)
+    feature_map = RawFeatureVector(num_qubits)
+    ansatz = EfficientSU2(num_qubits, reps=1)
+    qc = QuantumCircuit(num_qubits)
+    qc.compose(feature_map, inplace=True)
+    qc.compose(ansatz, inplace=True)
     return qc
 
-# Function to simulate quantum circuit
-def simulate_quantum_circuit(qc):
-    simulator = Aer.get_backend('qasm_simulator')
+# Function to perform variational quantum compression
+def variational_quantum_compression(data):
+    num_qubits = len(data)
+    qc = create_variational_circuit(data)
+    optimizer = COBYLA(maxiter=100)
+    vqe = VQE(qc, optimizer=optimizer, quantum_instance=QuantumInstance(Aer.get_backend('statevector_simulator')))
+    result = vqe.compute_minimum_eigenvalue()
+    return result.optimal_point
+
+# Function to simulate quantum circuit with noise mitigation
+def simulate_quantum_circuit_with_noise(qc):
+    simulator = AerSimulator()
     t_qc = transpile(qc, simulator)
     job = execute(t_qc, backend=simulator, shots=1024)
     result = job.result()
@@ -74,10 +81,14 @@ def main():
     # Generate sample data
     data = [0, 1, 1, 0, 1]
 
-    # Quantum Compression
-    qc = quantum_compression(data)
-    counts = simulate_quantum_circuit(qc)
-    print("Quantum Compression Results:", counts)
+    # Variational Quantum Compression
+    optimal_params = variational_quantum_compression(data)
+    print(f"Optimal parameters for quantum compression: {optimal_params}")
+
+    # Create and simulate quantum circuit with optimal parameters
+    qc = create_variational_circuit(data)
+    counts = simulate_quantum_circuit_with_noise(qc)
+    print("Quantum Compression Results with Noise Mitigation:", counts)
     plot_histogram(counts).show()
 
     # Machine Learning Model Training

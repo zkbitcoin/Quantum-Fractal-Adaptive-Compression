@@ -1,7 +1,12 @@
-from quantum_compression import variational_quantum_compression, simulate_quantum_circuit_with_noise, quantum_autoencoder_compression, visualize_quantum_results
+import numpy as np
+from quantum_compression import (
+    variational_quantum_compression,
+    simulate_quantum_circuit_with_noise,
+    quantum_autoencoder_compression,
+    visualize_quantum_results
+)
 from classical_model import build_and_train_model, evaluate_model
 from neural_network import build_and_train_neural_network, predict_compressibility
-import numpy as np
 
 def main():
     # Generate sample data
@@ -22,15 +27,14 @@ def main():
     np.random.seed(42)
     X_data = np.random.randint(2, size=(n_samples, len(data)))
     y_data = np.sum(X_data, axis=1)
-
     model = build_and_train_model(X_data, y_data)
     accuracy = evaluate_model(model, X_data, y_data)
-    print(f"Accuracy without compression: {accuracy}")
+    print(f"Accuracy without compression: {accuracy:.2f}")
 
     # Neural Network for Predicting Compressibility
     nn_model = build_and_train_neural_network()
     compressibility_prediction = predict_compressibility(nn_model, data)
-    print(f"Predicted compressibility: {compressibility_prediction}")
+    print(f"Predicted compressibility: {compressibility_prediction:.2f}")
 
     # Quantum Autoencoder Compression
     qc_autoencoder = quantum_autoencoder_compression(data)

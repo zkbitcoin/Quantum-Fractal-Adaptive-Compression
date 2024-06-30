@@ -4,11 +4,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
 
-# Function to build and train a machine learning model
 def build_and_train_model(X, y):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
     model = LogisticRegression()
     param_grid = {'C': [0.1, 1, 10]}
     grid_search = GridSearchCV(model, param_grid, cv=5)
@@ -16,7 +15,6 @@ def build_and_train_model(X, y):
     best_model = grid_search.best_estimator_
     return best_model
 
-# Function to evaluate model accuracy
 def evaluate_model(model, X, y):
     y_pred = model.predict(X)
     accuracy = accuracy_score(y, y_pred)

@@ -1,5 +1,6 @@
 import numpy as np
 from qiskit import transpile, assemble, QuantumCircuit
+from qiskit.circuit.library import EfficientSU2
 from qiskit_aer import AerSimulator
 from qiskit_algorithms import VQE
 from qiskit_algorithms.optimizers import COBYLA
@@ -9,25 +10,62 @@ from qiskit.visualization import plot_histogram
 
 # Define a simple variational quantum compression routine
 def variational_quantum_compression(data):
-    # This is a placeholder for an actual VQC routine.
-    # Here we assume the optimal parameters are some function of the data.
+    num_qubits = len(data)
 
-    # Example: Return parameters based on the length of the data (dummy example).
-    # In practice, you would perform a variational quantum algorithm here.
-    return np.random.rand(len(data))
+    # Here, EfficientSU2 is used to generate a variational circuit, which has parameters.
+    # We extract the parameters of the circuit (angles) to use for the RX gates.
+    feature_map = EfficientSU2(num_qubits, reps=1)
 
-# Create a simple parameterized quantum circuit for compression
-def create_variational_circuit(data):
+    # Get the parameters of the circuit. The parameters will be symbolic.
+    # These are the optimal parameters you want for your variational compression.
+    return feature_map.parameters  # This returns a list of parameter symbols
+
+
+def create_variational_circuit(data, measure_all_flag=True):
     n = len(data)  # Number of qubits
     qc = QuantumCircuit(n)
 
-    # Apply parameterized RX gates based on data and optimal parameters
+    # Get the optimal parameters (these are symbolic parameters)
     optimal_params = variational_quantum_compression(data)
 
+    # Ensure that the number of parameters matches the number of qubits
+    if len(optimal_params) != n:
+        # Slice the parameters to match the number of qubits
+        optimal_params = optimal_params[:n]  # Take only the first `n` parameters
+
+    # Bind parameters to numerical values (random values for simplicity)
+    param_values = np.random.uniform(0, 2 * np.pi, size=n)  # Random values between 0 and 2*pi
+
+    # Create a dictionary to bind parameters
+    parameter_bindings = {optimal_params[i]: param_values[i] for i in range(n)}
+
+    # Apply RX gates with the bound parameters
     for i in range(n):
         qc.rx(optimal_params[i], i)
 
-    qc.measure_all()  # Measure all qubits at the end of the circuit
+    # Use assign_parameters to bind the values to the symbolic parameters
+    qc = qc.assign_parameters(parameter_bindings)
+
+    # Conditional measurement based on the flag
+    if measure_all_flag:
+        qc.measure_all()  # Measure all qubits if flag is True
+
+    return qc
+
+
+# Create a simple quantum circuit without compression
+def create_basic_quantum_circuit(data, measure_all_flag=True):
+    n = len(data)  # Number of qubits
+    qc = QuantumCircuit(n)
+
+    # Apply Hadamard gate to each qubit to put them in superposition
+    for qubit in range(n):
+        qc.h(qubit)
+
+    # Measure all qubits
+    # Conditional measurement based on the flag
+    if measure_all_flag:
+        qc.measure_all()
     return qc
 
 # Simulate the quantum circuit with noise
@@ -104,10 +142,6 @@ def visualize_quantum_results(counts, filename='quantum_compression_plot.pdf'):
     # Print the full path where the plot was saved
     print(f"Plot saved as {os.path.abspath(full_path)}")
 
-
-if __name__ == "__main__":
-    main()
-
 def main():
     # Generate sample data
     data = [0, 1, 1, 0, 1]
@@ -123,3 +157,6 @@ def main():
 
     # Visualize the results
     visualize_quantum_results(counts)
+
+if __name__ == "__main__":
+    main()

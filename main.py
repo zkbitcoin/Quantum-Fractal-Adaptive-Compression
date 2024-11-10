@@ -1,6 +1,7 @@
 import numpy as np
 from quantum_compression import (
     create_variational_circuit,
+    create_basic_quantum_circuit,
     variational_quantum_compression,
     simulate_quantum_circuit_with_noise,
     quantum_autoencoder_compression,
@@ -17,11 +18,17 @@ def main():
     optimal_params = variational_quantum_compression(data)
     print(f"Optimal parameters for quantum compression: {optimal_params}")
 
-    # Create and simulate quantum circuit with optimal parameters
+    # Create and simulate quantum circuit with optimal parameters (compressed circuit)
+    qc = create_basic_quantum_circuit(data)
+    counts = simulate_quantum_circuit_with_noise(qc)
+    print("Quantum Basic (no Compression) Results with Noise Mitigation:", counts)
+    visualize_quantum_results(counts, filename="quantum_no_compression_plot.pdf")
+
+    # Create and simulate quantum circuit with optimal parameters (compressed circuit)
     qc = create_variational_circuit(data)
     counts = simulate_quantum_circuit_with_noise(qc)
     print("Quantum Compression Results with Noise Mitigation:", counts)
-    visualize_quantum_results(counts)
+    visualize_quantum_results(counts, filename="quantum_compression_plot.pdf")
 
     # Machine Learning Model Training
     n_samples = 100
